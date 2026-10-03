@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
++-<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LifeFlow — Blood Donation & Booking Platform</title>
+<meta name="description" content="LifeFlow connects voluntary donors with nearby blood banks in real time and lets them book donation appointments in a few taps.">
+
+<style>
+/* =========================================================
+   LifeFlow — Single-file build
+   Design tokens: paper background, navy ink, blood-red primary,
+   pulse-teal secondary, mono face for data/blood-type readouts.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --bg: #F5F6F8;
+  --surface: #FFFFFF;
+  --ink: #14213D;
+  --ink-soft: #5B6478;
+  --blood: #D62839;
+  --blood-dark: #A81E2C;
+  --pulse: #2A9D8F;
+  --pulse-dark: #1F7A70;
+  --amber: #E9A23B;
+  --line: #E1E4EA;
+  --line-strong: #C7CCD6;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(20,33,61,0.05), 0 8px 24px -12px rgba(20,33,61,0.12);
+  --display: 'Space Grotesk', sans-serif;
+  --body: 'Inter', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after{ box-sizing: border-box; }
+html{ scroll-behavior: smooth; }
+body{
+  margin: 0;
+  font-family: var(--body);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+img{ max-width: 100%; display: block; }
+a{ color: inherit; text-decoration: none; }
+h1, h2, h3, h4{
+  font-family: var(--display);
+  font-weight: 700;
+  margin: 0 0 0.5em 0;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+p{ margin: 0 0 1em 0; color: var(--ink-soft); }
+.mono{ font-family: var(--mono); }
+.container{ max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+.eyebrow{
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blood);
+  font-weight: 600;
+}
+
+.skip-link{
+  position: absolute; left: -999px; top: auto;
+  background: var(--ink); color: #fff;
+  padding: 10px 16px; border-radius: 6px; z-index: 999;
+}
+.skip-link:focus{ left: 16px; top: 16px; }
+
+a:focus-visible, button:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, .tile:focus-visible{
+  outline: 3px solid var(--pulse);
+  outline-offset: 2px;
+}
+
+/* ---------- Nav ---------- */
+.site-header{
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(245,246,248,0.9);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.nav{ display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; }
+.brand{ display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 20px; color: var(--ink); cursor: pointer; }
+.brand-mark{ width: 30px; height: 30px; flex-shrink: 0; }
+.nav-links{ display: flex; align-items: center; gap: 28px; list-style: none; margin: 0; padding: 0; }
+.nav-links a{ font-size: 14px; font-weight: 500; color: var(--ink-soft); padding: 8px 2px; border-bottom: 2px solid transparent; transition: color 0.15s ease, border-color 0.15s ease; cursor: pointer; }
+.nav-links a:hover, .nav-links a.active{ color: var(--ink); border-color: var(--blood); }
+.nav-actions{ display: flex; gap: 12px; align-items: center; }
+.nav-toggle{ display: none; background: none; border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+
+/* ---------- Buttons ---------- */
+.btn{ display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--body); font-weight: 600; font-size: 14px; padding: 12px 20px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease; white-space: nowrap; }
+.btn:active{ transform: translateY(1px); }
+.btn-primary{ background: var(--blood); color: #fff; }
+.btn-primary:hover{ background: var(--blood-dark); }
+.btn-ghost{ background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn-ghost:hover{ border-color: var(--ink); }
+.btn-teal{ background: var(--pulse); color: #fff; }
+.btn-teal:hover{ background: var(--pulse-dark); }
+.btn-block{ width: 100%; }
+.btn-sm{ padding: 8px 14px; font-size: 13px; }
+
+/* ---------- Views (SPA sections) ---------- */
+.view[hidden]{ display: none !important; }
+
+/* ---------- Hero + ECG signature motif ---------- */
+.hero{ padding: 64px 0 40px; }
+.hero-grid{ display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center; }
+.hero h1{ font-size: clamp(32px, 4.2vw, 48px); line-height: 1.08; margin-top: 12px; }
+.hero .lede{ font-size: 17px; max-width: 46ch; }
+.hero-ctas{ display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+.stat-row{ display: flex; gap: 28px; margin-top: 40px; flex-wrap: wrap; }
+.stat-row .stat b{ display: block; font-family: var(--mono); font-size: 22px; color: var(--ink); }
+.stat-row .stat span{ font-size: 12px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.06em; }
+
+.stock-board{ background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 22px; position: relative; overflow: hidden; }
+.stock-board-head{ display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+.stock-board-head h3{ font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; margin: 0; }
+.stock-board-head .live{ font-family: var(--mono); font-size: 11px; color: var(--pulse); display: flex; align-items: center; gap: 6px; }
+.live-dot{ width: 7px; height: 7px; border-radius: 50%; background: var(--pulse); animation: livepulse 1.8s infinite; }
+@keyframes livepulse{ 0%{ box-shadow: 0 0 0 0 rgba(42,157,143,0.55); } 70%{ box-shadow: 0 0 0 8px rgba(42,157,143,0); } 100%{ box-shadow: 0 0 0 0 rgba(42,157,143,0); } }
+.ecg-line{ width: 100%; height: 34px; margin: 4px 0 16px; }
+.ecg-line path{ fill: none; stroke: var(--blood); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 340; stroke-dashoffset: 340; animation: draw 2.6s ease-in-out infinite; }
+@keyframes draw{ 0%{ stroke-dashoffset: 340; } 55%{ stroke-dashoffset: 0; } 100%{ stroke-dashoffset: -340; } }
+.blood-grid{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.blood-tile{ border: 1px solid var(--line); border-radius: 10px; padding: 10px 8px; text-align: center; background: #FCFCFD; }
+.blood-tile .type{ font-family: var(--mono); font-weight: 600; font-size: 15px; }
+.blood-tile .units{ font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.status-dot{ display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; }
+.status-ok{ background: var(--pulse); }
+.status-low{ background: var(--amber); }
+.status-critical{ background: var(--blood); }
+
+section{ padding: 56px 0; }
+.section-head{ max-width: 60ch; margin-bottom: 32px; }
+.section-head h2{ font-size: clamp(24px, 3vw, 32px); }
+.divider-ecg{ width: 100%; height: 20px; opacity: 0.5; margin: 0 0 8px; }
+.divider-ecg path{ fill: none; stroke: var(--line-strong); stroke-width: 1.5; }
+
+.card-grid{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card{ background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.card .num{ font-family: var(--mono); color: var(--blood); font-size: 13px; margin-bottom: 10px; display: block; }
+.card h3{ font-size: 17px; margin-bottom: 6px; }
+.card p{ font-size: 14px; margin: 0; }
+
+.steps{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+.step{ position: relative; padding: 0 16px 0 0; }
+.step .step-index{ font-family: var(--mono); font-size: 12px; color: var(--pulse); border: 1px solid var(--line-strong); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; background: var(--surface); }
+.step h4{ font-size: 15px; margin-bottom: 4px; }
+.step p{ font-size: 13px; }
+
+/* ---------- Forms ---------- */
+.auth-shell{ min-height: calc(100vh - 65px); display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
+.auth-card{ width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); padding: 32px; }
+.auth-card h1{ font-size: 24px; }
+.field{ margin-bottom: 16px; }
+.field label{ display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+.field .hint{ font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.field .error{ font-size: 12px; color: var(--blood); margin-top: 4px; display: none; }
+.field.invalid .error{ display: block; }
+.field.invalid input, .field.invalid select{ border-color: var(--blood); }
+input, select, textarea{ width: 100%; font-family: var(--body); font-size: 14px; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: #fff; color: var(--ink); }
+input:focus, select:focus, textarea:focus{ border-color: var(--pulse); }
+.role-toggle{ display: flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
+.role-toggle button{ flex: 1; padding: 10px; border: none; background: #fff; font-family: var(--body); font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+.role-toggle button.active{ background: var(--ink); color: #fff; }
+.form-foot{ margin-top: 18px; font-size: 13px; text-align: center; color: var(--ink-soft); }
+.form-foot a{ color: var(--blood); font-weight: 600; cursor: pointer; }
+.form-note{ font-size: 12px; color: var(--ink-soft); margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--line); }
+
+/* ---------- Dashboard / search ---------- */
+.dash-shell{ display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 28px 24px 60px; max-width: 1280px; margin: 0 auto; align-items: start; }
+.panel{ background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+.panel h2{ font-size: 16px; }
+.filter-group{ margin-bottom: 16px; }
+.filter-group label{ font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-soft); display: block; margin-bottom: 6px; }
+.chip-row{ display: flex; flex-wrap: wrap; gap: 6px; }
+.chip{ font-family: var(--mono); font-size: 12px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: #fff; cursor: pointer; }
+.chip.active{ background: var(--ink); color: #fff; border-color: var(--ink); }
+.map-frame{ border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; height: 260px; margin-bottom: 18px; position: relative; background: repeating-linear-gradient(0deg, #EFF1F5 0, #EFF1F5 1px, transparent 1px, transparent 28px), repeating-linear-gradient(90deg, #EFF1F5 0, #EFF1F5 1px, transparent 1px, transparent 28px), #F9FAFB; }
+.map-frame .map-caption{ position: absolute; left: 12px; bottom: 12px; font-family: var(--mono); font-size: 11px; background: rgba(20,33,61,0.85); color: #fff; padding: 5px 9px; border-radius: 6px; }
+.pin{ position: absolute; width: 16px; height: 16px; border-radius: 50% 50% 50% 0; background: var(--blood); transform: rotate(-45deg); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.pin.self{ background: var(--pulse); }
+.bank-list{ display: flex; flex-direction: column; gap: 12px; }
+.bank-card{ display: grid; grid-template-columns: 1fr auto; gap: 12px; border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; align-items: center; }
+.bank-card h3{ font-size: 15px; margin-bottom: 2px; }
+.bank-card .meta{ font-size: 12px; color: var(--ink-soft); }
+.bank-stock{ display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.mini-tile{ font-family: var(--mono); font-size: 11px; padding: 3px 7px; border-radius: 6px; border: 1px solid var(--line); background: #FCFCFD; }
+
+/* ---------- Booking calendar ---------- */
+.booking-shell{ padding: 28px 24px 60px; max-width: 1000px; margin: 0 auto; }
+.calendar{ background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+.cal-head{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.cal-grid{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal-day{ aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 13px; background: #fff; cursor: pointer; }
+.cal-day.disabled{ color: #C7CCD6; cursor: not-allowed; background: #FAFAFB; }
+.cal-day.selected{ background: var(--ink); color: #fff; border-color: var(--ink); }
+.cal-day.today{ border-color: var(--pulse); }
+.slot-grid{ display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; margin-top: 18px; }
+.slot{ font-family: var(--mono); font-size: 13px; padding: 10px; text-align: center; border: 1px solid var(--line-strong); border-radius: 8px; background: #fff; cursor: pointer; }
+.slot.full{ color: #C7CCD6; background: #FAFAFB; cursor: not-allowed; text-decoration: line-through; }
+.slot.selected{ background: var(--pulse); color: #fff; border-color: var(--pulse); }
+.confirm-bar{ display: flex; justify-content: space-between; align-items: center; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); flex-wrap: wrap; gap: 12px; }
+
+/* ---------- Emergency board ---------- */
+.emergency-shell{ padding: 28px 24px 60px; max-width: 1000px; margin: 0 auto; }
+.emergency-banner{ background: var(--ink); color: #fff; border-radius: var(--radius); padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; gap: 16px; flex-wrap: wrap; }
+.emergency-banner p{ color: rgba(255,255,255,0.75); margin: 4px 0 0; }
+.emergency-banner h2{ color: #fff; margin: 0; font-size: 18px; }
+.req-list{ display: flex; flex-direction: column; gap: 12px; margin-bottom: 26px; }
+.req-card{ display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); padding: 16px; }
+.req-type{ font-family: var(--mono); font-weight: 700; font-size: 18px; color: var(--blood); border: 2px solid var(--blood); border-radius: 8px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; }
+.req-card h3{ font-size: 15px; margin-bottom: 2px; }
+.req-card .meta{ font-size: 12px; color: var(--ink-soft); }
+.req-urgency{ font-family: var(--mono); font-size: 11px; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; white-space: nowrap; }
+.urg-critical{ background: rgba(214,40,57,0.1); color: var(--blood); }
+.urg-urgent{ background: rgba(233,162,59,0.15); color: #A5691F; }
+
+/* ---------- Footer ---------- */
+.site-footer{ border-top: 1px solid var(--line); padding: 28px 0; margin-top: 40px; }
+.footer-row{ display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--ink-soft); }
+
+/* ---------- Toast ---------- */
+.toast{ position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 200; }
+.toast.show{ opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 900px){
+  .hero-grid{ grid-template-columns: 1fr; }
+  .steps{ grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .dash-shell{ grid-template-columns: 1fr; }
+}
+@media (max-width: 640px){
+  .nav-links{ position: absolute; top: 100%; left: 0; right: 0; background: var(--surface); flex-direction: column; align-items: flex-start; padding: 16px 24px; border-bottom: 1px solid var(--line); display: none; }
+  .nav-links.open{ display: flex; }
+  .nav-toggle{ display: inline-flex; }
+  .nav-actions .btn-ghost{ display: none; }
+  .steps{ grid-template-columns: 1fr; }
+  .blood-grid{ grid-template-columns: repeat(2, 1fr); }
+  .req-card{ grid-template-columns: auto 1fr; }
+  .req-urgency{ grid-column: 1 / -1; justify-self: start; }
+}
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="nav">
+    <a class="brand" data-view="home">
+      <svg class="brand-mark" viewBox="0 0 30 30" aria-hidden="true">
+        <path d="M15 3 C15 3 5 14 5 20 a10 10 0 0 0 20 0 C25 14 15 3 15 3 Z" fill="#D62839"/>
+        <path d="M9 20 a6 6 0 0 0 6 6" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      </svg>
+      LifeFlow
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">☰</button>
+    <ul class="nav-links">
+      <li><a data-view="home">Home</a></li>
+      <li><a data-view="dashboard">Find a Blood Bank</a></li>
+      <li><a data-view="book">Book Appointment</a></li>
+      <li><a data-view="emergency">Emergency Requests</a></li>
+    </ul>
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm" data-view="login">Log in</a>
+      <a class="btn btn-primary btn-sm" data-view="register">Become a Donor</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+
+<!-- ============================= HOME ============================= -->
+<section class="view" id="view-home" data-view="home">
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">Geolocation-based donation network</span>
+        <h1>Find compatible blood. Book a slot. Save a life today.</h1>
+        <p class="lede">
+          LifeFlow connects willing donors with nearby blood banks that publish real-time stock levels,
+          so hospitals stop guessing and donors stop wandering. Register once, get matched by blood type
+          and location, and reserve a donation slot that fits your day.
+        </p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" data-view="register">Register as a Donor</a>
+          <a class="btn btn-ghost" data-view="dashboard">Search Blood Banks</a>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><b>4</b><span>Partner blood banks</span></div>
+          <div class="stat"><b>151 U</b><span>Units in network right now</span></div>
+          <div class="stat"><b>4</b><span>Active emergency requests</span></div>
+        </div>
+      </div>
+
+      <div class="stock-board" aria-label="Live network blood stock">
+        <div class="stock-board-head">
+          <h3>Network stock board</h3>
+          <span class="live"><span class="live-dot" aria-hidden="true"></span>LIVE</span>
+        </div>
+        <svg class="ecg-line" aria-hidden="true"></svg>
+        <div class="blood-grid" data-stock-board></div>
+      </div>
+    </div>
+  </section>
+
+  <svg class="divider-ecg container" aria-hidden="true"></svg>
+
+  <section id="objectives">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">What LifeFlow does</span>
+        <h2>Built around four concrete objectives</h2>
+      </div>
+      <div class="card-grid">
+        <div class="card"><span class="num">01</span><h3>Secure registration & login</h3><p>Separate, secure portals for donors and blood bank administrators, so records stay accurate on both sides.</p></div>
+        <div class="card"><span class="num">02</span><h3>Map-based search</h3><p>Locate nearby blood banks or active donation drives on a map, filtered by distance and blood type.</p></div>
+        <div class="card"><span class="num">03</span><h3>Slot-based booking</h3><p>A booking calendar lets donors reserve a donation time, cutting down long wait times at clinics.</p></div>
+        <div class="card"><span class="num">04</span><h3>Emergency request module</h3><p>Hospitals and individuals can broadcast an urgent need for a specific blood type to nearby donors.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works" style="background:var(--surface); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Donor journey</span>
+        <h2>How booking a donation works</h2>
+      </div>
+      <div class="steps">
+        <div class="step"><span class="step-index">1</span><h4>Register</h4><p>Create a donor profile with blood type and location.</p></div>
+        <div class="step"><span class="step-index">2</span><h4>Search</h4><p>View nearby blood banks and their live stock levels.</p></div>
+        <div class="step"><span class="step-index">3</span><h4>Book a slot</h4><p>Pick a date and time on the donation calendar.</p></div>
+        <div class="step"><span class="step-index">4</span><h4>Donate</h4><p>Arrive at your slot — no queue, no guesswork.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="emergency-cta">
+    <div class="container">
+      <div class="emergency-banner">
+        <div>
+          <h2>Active emergency requests need your blood type</h2>
+          <p>4 hospitals in Bengaluru are short on specific blood types right now.</p>
+        </div>
+        <a class="btn btn-teal" data-view="emergency">View Emergency Board</a>
+      </div>
+    </div>
+  </section>
+
+</section>
+
+<!-- ============================= LOGIN ============================= -->
+<section class="view" id="view-login" data-view="login" hidden>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <span class="eyebrow">Welcome back</span>
+      <h1>Log in to LifeFlow</h1>
+
+      <div class="role-toggle" role="tablist" aria-label="Account type">
+        <button type="button" class="active" data-role="donor" role="tab" aria-selected="true">Donor</button>
+        <button type="button" data-role="admin" role="tab" aria-selected="false">Blood Bank Admin</button>
+      </div>
+
+      <form id="login-form" data-success-message="Logged in successfully.">
+        <div class="field">
+          <label for="login-email">Email address</label>
+          <input type="email" id="login-email" name="email" placeholder="you@example.com" required>
+          <span class="error">Enter a valid email address.</span>
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="password" placeholder="••••••••" required>
+          <span class="error">Password must be at least 8 characters.</span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Log in</button>
+      </form>
+
+      <p class="form-foot">Don't have an account? <a data-view="register">Register as a donor</a></p>
+      <p class="form-note">Demo form — validates on the client only. Wire this up to a PHP session/auth endpoint for the real backend.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= REGISTER ============================= -->
+<section class="view" id="view-register" data-view="register" hidden>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <span class="eyebrow">Join the network</span>
+      <h1>Create your LifeFlow account</h1>
+
+      <div class="role-toggle" role="tablist" aria-label="Account type">
+        <button type="button" class="active" data-role="donor" role="tab" aria-selected="true">Donor</button>
+        <button type="button" data-role="admin" role="tab" aria-selected="false">Blood Bank Admin</button>
+      </div>
+
+      <form id="register-form" data-success-message="Account created. You can now log in.">
+        <div class="field">
+          <label for="reg-name">Full name</label>
+          <input type="text" id="reg-name" name="name" placeholder="Your full name" required>
+          <span class="error">Enter your full name.</span>
+        </div>
+        <div class="field">
+          <label for="reg-email">Email address</label>
+          <input type="email" id="reg-email" name="email" placeholder="you@example.com" required>
+          <span class="error">Enter a valid email address.</span>
+        </div>
+        <div class="field">
+          <label for="reg-phone">Phone number</label>
+          <input type="tel" id="reg-phone" name="phone"
+         placeholder="Your phone number" required>
+          <span class="error">Enter your phone number.</span>
+      </div>
+        <div class="field">
+          <label for="reg-blood-type">Blood type</label>
+          <select id="reg-blood-type" name="bloodType" required>
+            <option value="" selected disabled>Select your blood type</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+          <span class="error">Select a blood type.</span>
+        </div>
+        <div class="field">
+          <label for="reg-city">City / area</label>
+          <input type="text" id="reg-city" name="city" placeholder="e.g. Jayanagar, Bengaluru" required>
+          <span class="error">Enter your city or area.</span>
+        </div>
+        <div class="field">
+          <label for="reg-password">Password</label>
+          <input type="password" id="reg-password" name="password" placeholder="At least 8  characters" required>
+          <span class="error">Password must be at least 8  characters.</span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Create account</button>
+      </form>
+
+      <p class="form-foot">Already registered? <a data-view="login">Log in</a></p>
+      <p class="form-note">Demo form — validates on the client only. Wire this up to a PHP registration endpoint backed by MySQL for the real backend.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= DASHBOARD ============================= -->
+<section class="view" id="view-dashboard" data-view="dashboard" hidden>
+  <div class="container" style="padding-top:24px;">
+    <span class="eyebrow">Map-based search</span>
+    <h1 style="font-size:26px;">Find a nearby blood bank</h1>
+    <p style="max-width:60ch;">Filter by blood type or distance to see which blood banks near you can take a donation right now.</p>
+  </div>
+
+  <div class="dash-shell">
+    <aside class="panel" aria-label="Search filters">
+      <h2>Filters</h2>
+      <div class="filter-group">
+        <label for="area-input">Your area</label>
+        <input type="text" id="area-input" placeholder="e.g. Jayanagar, Bengaluru" value="Bengaluru">
+      </div>
+      <div class="filter-group">
+        <label>Blood type needed</label>
+        <div class="chip-row" id="type-filters">
+          <button class="chip active" data-type="all">All</button>
+          <button class="chip" data-type="A+">A+</button>
+          <button class="chip" data-type="A-">A-</button>
+          <button class="chip" data-type="B+">B+</button>
+          <button class="chip" data-type="B-">B-</button>
+          <button class="chip" data-type="AB+">AB+</button>
+          <button class="chip" data-type="AB-">AB-</button>
+          <button class="chip" data-type="O+">O+</button>
+          <button class="chip" data-type="O-">O-</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Max distance</label>
+        <div class="chip-row" id="distance-filters">
+          <button class="chip active" data-dist="20">Within 20 km</button>
+          <button class="chip" data-dist="5">Within 5 km</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="apply-filters">Apply filters</button>
+    </aside>
+
+    <section>
+      <div class="map-frame" aria-label="Map showing blood bank locations (placeholder)">
+        <div class="pin self" style="left:48%; top:52%;" title="Your location"></div>
+        <div class="pin" style="left:30%; top:30%;" title="Bengaluru City Blood Bank"></div>
+        <div class="pin" style="left:62%; top:26%;" title="St. Mary's Hospital Blood Centre"></div>
+        <div class="pin" style="left:38%; top:70%;" title="Vyasa Health Blood Bank"></div>
+        <div class="pin" style="left:70%; top:60%;" title="Rainbow Community Blood Bank"></div>
+        <span class="map-caption">Map view · connect Google Maps / Leaflet API here</span>
+      </div>
+      <div class="bank-list" id="bank-list" aria-live="polite"></div>
+    </section>
+  </div>
+</section>
+
+<!-- ============================= BOOK APPOINTMENT ============================= -->
+<section class="view" id="view-book" data-view="book" hidden>
+  <div class="booking-shell">
+    <span class="eyebrow">Slot-based booking</span>
+    <h1 style="font-size:26px;">Book a donation appointment</h1>
+    <p id="bank-context" style="max-width:60ch;">Pick an available date, then a time slot. This holds your place so you're not waiting in line at the clinic.</p>
+
+    <div class="calendar">
+      <div class="cal-head">
+        <button class="btn btn-ghost btn-sm" id="prev-month" aria-label="Previous month">‹</button>
+        <h2 id="cal-month" style="font-size:16px;"></h2>
+        <button class="btn btn-ghost btn-sm" id="next-month" aria-label="Next month">›</button>
+      </div>
+      <div class="cal-grid" id="cal-weekdays"></div>
+      <div class="cal-grid" id="cal-grid" style="margin-top:6px;"></div>
+
+      <div id="slot-section" style="display:none;">
+        <h3 style="font-size:14px; margin-top:22px;">Available slots on <span id="selected-date-label"></span></h3>
+        <div class="slot-grid" id="slot-grid"></div>
+      </div>
+
+      <div class="confirm-bar">
+        <div class="mono" id="selection-summary" style="font-size:13px; color:var(--ink-soft);">No date or slot selected yet.</div>
+        <button class="btn btn-primary" id="confirm-booking" disabled>Confirm booking</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================= EMERGENCY ============================= -->
+<section class="view" id="view-emergency" data-view="emergency" hidden>
+  <div class="emergency-shell">
+    <div class="emergency-banner">
+      <div>
+        <h2>Emergency blood request board</h2>
+        <p>Hospitals and individuals broadcast urgent needs here. Respond if your blood type matches.</p>
+      </div>
+      <button class="btn btn-teal" id="open-post-form">Post a Request</button>
+    </div>
+
+    <div class="req-list" id="req-list" aria-live="polite"></div>
+
+    <div class="panel" id="post-form-panel" style="display:none;">
+      <h2>Broadcast an urgent need</h2>
+      <form id="post-request-form" data-success-message="Emergency request posted to nearby donors.">
+        <div class="field">
+          <label for="req-blood-type">Blood type needed</label>
+          <select id="req-blood-type" required>
+            <option value="" selected disabled>Select blood type</option>
+            <option>A+</option><option>A-</option>
+            <option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option>
+            <option>O+</option><option>O-</option>
+          </select>
+          <span class="error">Select a blood type.</span>
+        </div>
+        <div class="field">
+          <label for="req-units">Units needed</label>
+          <input type="number" id="req-units" min="1" value="2" required>
+          <span class="error">Enter how many units are needed.</span>
+        </div>
+        <div class="field">
+          <label for="req-hospital">Hospital / requester name</label>
+          <input type="text" id="req-hospital" placeholder="e.g. St. Mary's Hospital Blood Centre" required>
+          <span class="error">Enter a hospital or requester name.</span>
+        </div>
+        <div class="field">
+          <label for="req-urgency">Urgency</label>
+          <select id="req-urgency" required>
+            <option value="urgent" selected>Urgent</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Broadcast request</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-row">
+    <span>LifeFlow — Smart Geolocation-Based Blood Donation & Appointment Booking Platform</span>
+    <span>Project synopsis demo · Front end only</span>
+  </div>
+</footer>
+
+<script>
+const  API_BASE ="/lifeflow/backend/Api/index.php?route=";
+/* =========================================================
+   LifeFlow — Mock data layer (stands in for the PHP/MySQL
+   backend described in the synopsis). Swap fetchX() for real
+   API calls when the backend is wired up.
+   ========================================================= */
+
+function stockStatus(units){
+  if(units <= 3) return "critical";
+  if(units <= 10) return "low";
+  return "ok";
+}
+
+const GLOBAL_STOCK = [
+  { type: "A+", units: 42 }, { type: "A-", units: 9 },
+  { type: "B+", units: 27 }, { type: "B-", units: 3 },
+  { type: "AB+", units: 14 }, { type: "AB-", units: 2 },
+  { type: "O+", units: 51 }, { type: "O-", units: 6 }
+];
+
+const BLOOD_BANKS = [
+  { id: "bb-001", name: "Bengaluru City Blood Bank", area: "Shivajinagar, Bengaluru", distanceKm: 2.4, phone: "080-2222-1010",
+    stock: [{type:"A+",units:18},{type:"O+",units:22},{type:"O-",units:4},{type:"B+",units:11}] },
+  { id: "bb-002", name: "St. Mary's Hospital Blood Centre", area: "Richmond Town, Bengaluru", distanceKm: 4.1, phone: "080-4111-5566",
+    stock: [{type:"A-",units:2},{type:"AB+",units:9},{type:"O+",units:14},{type:"B-",units:1}] },
+  { id: "bb-003", name: "Vyasa Health Blood Bank", area: "Jayanagar, Bengaluru", distanceKm: 6.8, phone: "080-3355-7788",
+    stock: [{type:"O+",units:30},{type:"A+",units:16},{type:"AB-",units:3},{type:"B+",units:8}] },
+  { id: "bb-004", name: "Rainbow Community Blood Bank", area: "Indiranagar, Bengaluru", distanceKm: 8.2, phone: "080-4499-2233",
+    stock: [{type:"B-",units:5},{type:"A+",units:12},{type:"O-",units:2},{type:"AB+",units:7}] }
+];
+
+let EMERGENCY_REQUESTS = [
+  { id: "er-101", type: "O-", hospital: "Bengaluru City Blood Bank, Shivajinagar", units: 4, urgency: "critical", postedMinsAgo: 12 },
+  { id: "er-102", type: "AB-", hospital: "St. Mary's Hospital Blood Centre, Richmond Town", units: 2, urgency: "critical", postedMinsAgo: 34 },
+  { id: "er-103", type: "B+", hospital: "Rainbow Community Blood Bank, Indiranagar", units: 6, urgency: "urgent", postedMinsAgo: 58 },
+  { id: "er-104", type: "A-", hospital: "Vyasa Health Blood Bank, Jayanagar", units: 3, urgency: "urgent", postedMinsAgo: 95 }
+];
+
+function fetchGlobalStock(){
+  return fetch('${API_BASE}/stock')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Unable to load blood stock");
+      }
+      return response.json();
+    });
+}
+
+function fetchBloodBanks(){
+  return fetch('${API_BASE}/banks')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Unable to load blood banks");
+      }
+      return response.json();
+    });
+}
+
+function fetchEmergencyRequests(){
+  return fetch('${API_BASE}/emergency')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Unable to load emergency requests");
+      }
+      return response.json();
+    });
+}
+
+/* =========================================================
+   Shared behaviour: nav, ECG lines, toast, validation
+   ========================================================= */
+
+function initNavToggle(){
+  const toggle = document.querySelector(".nav-toggle");
+  const links = document.querySelector(".nav-links");
+  if(!toggle || !links) return;
+  toggle.addEventListener("click", () => {
+    const isOpen = links.classList.toggle("open");
+    toggle.setAttribute("aria-expanded", String(isOpen));
+  });
+}
+
+function ecgPath(width, height){
+  const midY = height / 2;
+  return `M0,${midY} L${width*0.18},${midY} L${width*0.24},${midY-6} L${width*0.30},${midY} L${width*0.36},${midY} L${width*0.40},${height*0.08} L${width*0.44},${height*0.92} L${width*0.48},${midY} L${width*0.62},${midY} L${width*0.68},${midY-8} L${width*0.74},${midY} L${width},${midY}`;
+}
+
+function initEcgLines(){
+  document.querySelectorAll(".ecg-line, .divider-ecg").forEach(svg => {
+    if(svg.querySelector("path")) return;
+    const isDivider = svg.classList.contains("divider-ecg");
+    const w = isDivider ? 1160 : 340;
+    const h = isDivider ? 20 : 34;
+    svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    svg.setAttribute("preserveAspectRatio", "none");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", ecgPath(w, h));
+    svg.appendChild(path);
+  });
+}
+
+function initStockBoard(){
+  const grid = document.querySelector("[data-stock-board]");
+  if(!grid) return;
+  fetchGlobalStock().then(stock => {
+    grid.innerHTML = stock.map(item => {
+      const status = stockStatus(item.units);
+      return `<div class="blood-tile"><div class="type">${item.type}</div><div class="units"><span class="status-dot status-${status}"></span>${item.units} U</div></div>`;
+    }).join("");
+  });
+}
+
+function showToast(message){
+  let toast = document.querySelector(".toast");
+  if(!toast){
+    toast = document.createElement("div");
+    toast.className = "toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add("show");
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function validateField(fieldEl, isValid){
+  fieldEl.classList.toggle("invalid", !isValid);
+  return isValid;
+}
+
+function attachSimpleValidation(form){
+  if(form.dataset.validationAttached) return;
+  form.dataset.validationAttached = "true";
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    let allValid = true;
+    form.querySelectorAll(".field").forEach(field => {
+      const input = field.querySelector("input, select, textarea");
+      if(!input) return;
+      const isRequired = input.hasAttribute("required");
+      const value = input.value.trim();
+      let valid = true;
+      if(isRequired && value === "") valid = false;
+      if(input.type === "email" && value !== ""){
+        valid = valid && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+      }
+      if(input.type === "password" && value !== ""){
+        valid = valid && value.length >= 6;
+      }
+      if(!validateField(field, valid)) allValid = false;
+    });
+    if(allValid){
+      showToast(form.dataset.successMessage || "Submitted successfully.");
+      form.reset();
+      form.querySelectorAll(".field").forEach(f => f.classList.remove("invalid"));
+    }
+  });
+}
+
+function initRoleToggles(){
+  document.querySelectorAll(".role-toggle").forEach(group => {
+    group.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll("button").forEach(b => {
+          b.classList.remove("active");
+          b.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+      });
+    });
+  });
+}
+
+/* =========================================================
+   Dashboard view logic
+   ========================================================= */
+let dashboardLoaded = false;
+let allBanks = [];
+let activeType = "all";
+let maxDistance = 20;
+let selectedBankId = null;
+
+function renderBanks(){
+  const list = document.getElementById("bank-list");
+  const filtered = allBanks.filter(bank => {
+    const withinDistance = bank.distanceKm <= maxDistance;
+    const hasType = activeType === "all" || bank.stock.some(s => s.type === activeType && s.units > 0);
+    return withinDistance && hasType;
+  });
+
+  if(filtered.length === 0){
+    list.innerHTML = `<div class="panel">No blood banks match these filters. Try widening your distance or blood type.</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(bank => `
+    <div class="bank-card">
+      <div>
+        <h3>${bank.name}</h3>
+        <div class="meta">${bank.area} · ${bank.distanceKm} km away · ${bank.phone}</div>
+        <div class="bank-stock">
+          ${bank.stock.map(s => `<span class="mini-tile"><span class="status-dot status-${stockStatus(s.units)}"></span>${s.type} · ${s.units}U</span>`).join("")}
+        </div>
+      </div>
+      <a class="btn btn-primary btn-sm" data-view="book" data-bank-id="${bank.id}">Book slot</a>
+    </div>
+  `).join("");
+
+  list.querySelectorAll("[data-bank-id]").forEach(btn => {
+    btn.addEventListener("click", () => { selectedBankId = btn.dataset.bankId; });
+  });
+}
+
+function initDashboard(){
+  if(dashboardLoaded) return;
+  dashboardLoaded = true;
+  fetchBloodBanks().then(banks => { allBanks = banks; renderBanks(); });
+
+  document.getElementById("type-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    document.querySelectorAll("#type-filters .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    activeType = chip.dataset.type;
+  });
+  document.getElementById("distance-filters").addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if(!chip) return;
+    document.querySelectorAll("#distance-filters .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    maxDistance = Number(chip.dataset.dist);
+  });
+  document.getElementById("apply-filters").addEventListener("click", renderBanks);
+}
+
+/* =========================================================
+   Booking view logic
+   ========================================================= */
+let bookingInitialized = false;
+const today = new Date();
+let viewYear = today.getFullYear();
+let viewMonth = today.getMonth();
+let selectedDate = null;
+let selectedSlot = null;
+const SLOT_TIMES = ["9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM","2:00 PM","2:30 PM","3:00 PM","3:30 PM"];
+
+function isPastDate(y, m, d){
+  const date = new Date(y, m, d);
+  const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return date < cutoff;
+}
+function slotsForDate(y, m, d){
+  const seed = (y + m + d) % 4;
+  return SLOT_TIMES.map((time, i) => ({ time, full: (i + seed) % 3 === 0 }));
+}
+function renderWeekdays(){
+  document.getElementById("cal-weekdays").innerHTML = ["S","M","T","W","T","F","S"]
+    .map(d => `<div style="text-align:center; font-size:11px; color:var(--ink-soft); font-family:var(--mono);">${d}</div>`).join("");
+}
+function renderCalendar(){
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  document.getElementById("cal-month").textContent = monthLabel;
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const grid = document.getElementById("cal-grid");
+  let cells = "";
+  for(let i = 0; i < firstDay; i++) cells += `<div></div>`;
+  for(let d = 1; d <= daysInMonth; d++){
+    const past = isPastDate(viewYear, viewMonth, d);
+    const isToday = d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear();
+    const isSelected = selectedDate && selectedDate.y === viewYear && selectedDate.m === viewMonth && selectedDate.d === d;
+    cells += `<div class="cal-day ${past ? "disabled" : ""} ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}"
+                   ${past ? "" : `data-day="${d}"`} role="button" tabindex="${past ? "-1" : "0"}"
+                   aria-label="${monthLabel} ${d}">${d}</div>`;
+  }
+  grid.innerHTML = cells;
+  grid.querySelectorAll(".cal-day[data-day]").forEach(cell => {
+    cell.addEventListener("click", () => selectDate(Number(cell.dataset.day)));
+    cell.addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); selectDate(Number(cell.dataset.day)); } });
+  });
+}
+function selectDate(d){
+  selectedDate = { y: viewYear, m: viewMonth, d };
+  selectedSlot = null;
+  renderCalendar();
+  renderSlots();
+  updateSummary();
+}
+function renderSlots(){
+  const section = document.getElementById("slot-section");
+  if(!selectedDate){ section.style.display = "none"; return; }
+  section.style.display = "block";
+  const label = new Date(selectedDate.y, selectedDate.m, selectedDate.d).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  document.getElementById("selected-date-label").textContent = label;
+  const slots = slotsForDate(selectedDate.y, selectedDate.m, selectedDate.d);
+  const grid = document.getElementById("slot-grid");
+  grid.innerHTML = slots.map(s => `
+    <div class="slot ${s.full ? "full" : ""} ${selectedSlot === s.time ? "selected" : ""}"
+         data-time="${s.time}" role="button" tabindex="${s.full ? "-1" : "0"}"
+         aria-disabled="${s.full}">${s.time}${s.full ? " · Full" : ""}</div>
+  `).join("");
+  grid.querySelectorAll(".slot:not(.full)").forEach(el => {
+    el.addEventListener("click", () => { selectedSlot = el.dataset.time; renderSlots(); updateSummary(); });
+  });
+}
+function updateSummary(){
+  const summary = document.getElementById("selection-summary");
+  const confirmBtn = document.getElementById("confirm-booking");
+  if(selectedDate && selectedSlot){
+    const label = new Date(selectedDate.y, selectedDate.m, selectedDate.d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    summary.textContent = `${label} · ${selectedSlot}`;
+    confirmBtn.disabled = false;
+  } else if(selectedDate){
+    summary.textContent = "Pick a time slot to continue.";
+    confirmBtn.disabled = true;
+  } else {
+    summary.textContent = "No date or slot selected yet.";
+    confirmBtn.disabled = true;
+  }
+}
+function updateBankContext(){
+  const contextEl = document.getElementById("bank-context");
+  if(!selectedBankId){
+    contextEl.textContent = "Pick an available date, then a time slot. This holds your place so you're not waiting in line at the clinic.";
+    return;
+  }
+  const bank = allBanks.find(b => b.id === selectedBankId) || BLOOD_BANKS.find(b => b.id === selectedBankId);
+  if(bank) contextEl.textContent = `Booking at ${bank.name}, ${bank.area}. Pick an available date, then a time slot.`;
+}
+function initBooking(){
+  updateBankContext();
+  if(bookingInitialized) return;
+  bookingInitialized = true;
+  document.getElementById("prev-month").addEventListener("click", () => { viewMonth--; if(viewMonth < 0){ viewMonth = 11; viewYear--; } renderCalendar(); });
+  document.getElementById("next-month").addEventListener("click", () => { viewMonth++; if(viewMonth > 11){ viewMonth = 0; viewYear++; } renderCalendar(); });
+  document.getElementById("confirm-booking").addEventListener("click", () => showToast("Appointment reserved. A confirmation would be emailed here."));
+  renderWeekdays();
+  renderCalendar();
+}
+
+/* =========================================================
+   Emergency view logic
+   ========================================================= */
+let emergencyLoaded = false;
+
+function renderRequests(){
+  const list = document.getElementById("req-list");
+  if(EMERGENCY_REQUESTS.length === 0){
+    list.innerHTML = `<div class="panel">No active emergency requests right now.</div>`;
+    return;
+  }
+  list.innerHTML = EMERGENCY_REQUESTS.slice().sort((a, b) => a.postedMinsAgo - b.postedMinsAgo).map(r => `
+    <div class="req-card">
+      <div class="req-type">${r.type}</div>
+      <div>
+        <h3>${r.hospital}</h3>
+        <div class="meta">${r.units} unit${r.units > 1 ? "s" : ""} needed · posted ${r.postedMinsAgo} min ago</div>
+      </div>
+      <span class="req-urgency urg-${r.urgency}">${r.urgency}</span>
+    </div>
+  `).join("");
+}
+
+function initEmergency(){
+  if(emergencyLoaded){ renderRequests(); return; }
+  emergencyLoaded = true;
+  fetchEmergencyRequests().then(data => { EMERGENCY_REQUESTS = data; renderRequests(); });
+
+  document.getElementById("open-post-form").addEventListener("click", () => {
+    const panel = document.getElementById("post-form-panel");
+    panel.style.display = panel.style.display === "none" ? "block" : "none";
+    if(panel.style.display === "block") panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  const postForm = document.getElementById("post-request-form");
+  attachSimpleValidation(postForm);
+  postForm.addEventListener("submit", () => {
+    const type = document.getElementById("req-blood-type").value;
+    const units = document.getElementById("req-units").value;
+    const hospital = document.getElementById("req-hospital").value;
+    const urgency = document.getElementById("req-urgency").value;
+    if(!type || !hospital) return;
+    EMERGENCY_REQUESTS.unshift({ id: "er-" + Date.now(), type, hospital, units: Number(units) || 1, urgency, postedMinsAgo: 0 });
+    renderRequests();
+    document.getElementById("post-form-panel").style.display = "none";
+  });
+}
+
+/* =========================================================
+   Router — one file, six views, swapped by hash
+   ========================================================= */
+const VIEWS = ["home", "login", "register", "dashboard", "book", "emergency"];
+
+function showView(name){
+  document.querySelectorAll(".view").forEach(v => { v.hidden = v.dataset.view !== name; });
+  document.querySelectorAll(".nav-links a[data-view]").forEach(a => {
+    a.classList.toggle("active", a.dataset.view === name);
+  });
+  document.querySelector(".nav-links").classList.remove("open");
+  window.scrollTo(0, 0);
+
+  if(name === "home") initStockBoard();
+  if(name === "dashboard") initDashboard();
+  if(name === "book") initBooking();
+  if(name === "emergency") initEmergency();
+
+  initEcgLines();
+}
+ function initRegisterForm() {
+  const form = document.getElementById("register-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
+    }
+
+    const formData = new FormData(form);
+
+    const userData = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      password: formData.get("password"),
+      blood_group: formData.get("bloodType"),
+      city: formData.get("city")
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(userData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.success === false || result.error) {
+        throw new Error(result.message || result.error || "Registration failed.");
+      }
+
+      showToast(result.message || "Account created successfully!");
+      form.reset();
+
+    } catch (error) {
+      showToast(error.message || "Unable to connect to the server.");
+    }
+  });
+}
+
+document.addEventListener("click", (e) => {
+  const el = e.target.closest("[data-view]");
+  if (!el) return;
+  e.preventDefault();
+  if (el.dataset.bankId) selectedBankId = el.dataset.bankId;
+  location.hash = el.dataset.view;
+});
+
+window.addEventListener("hashchange", route);
+
+document.addEventListener("DOMContentLoaded", () => {
+  initNavToggle();
+  initRoleToggles();
+  attachSimpleValidation(document.getElementById("login-form"));
+  initRegisterForm();
+  route();
+}); </script>
+</body>
+</html
+
+
+
